@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+// See https://aka.ms/new-console-template for more information
 using System.Data;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
@@ -68,41 +68,11 @@ try
     readCommand.Parameters.AddWithValue("$chapter", dailyTanakh.Ref);
 
     string summaryOneLine = "";
-    char[] summary = [];
 
     using var reader = readCommand.ExecuteReader();
     if (reader.Read())
     {
         summaryOneLine = reader.GetString(0);
-
-        // All the code below is to break the summary at the last space in every 80 characters
-        summary = summaryOneLine.ToCharArray();
-
-        var lineSize = 80;
-        var lines = summaryOneLine.Length / lineSize;
-        var margin = 0;
-
-        for (var line = 0; line < lines; line++)
-        {
-            char[] reversedLine = summaryOneLine
-                .Substring(line * lineSize - margin, lineSize)
-                .ToCharArray()
-                .Reverse()
-                .ToArray();
-
-            var spaceIndex = 0;
-            for (int i = 0; i < reversedLine.Length; i++)
-            {
-                if (reversedLine[i] == ' ')
-                {
-                    spaceIndex = i;
-                    break;
-                }
-            }
-
-            summary[(line + 1) * lineSize - spaceIndex - 1] = '\n';
-            margin = spaceIndex;
-        }
     }
 
     // Displaying all the data
@@ -111,7 +81,7 @@ try
     Console.WriteLine("┌" + string.Concat(Enumerable.Repeat("─", titleLength)) + "┐");
     Console.WriteLine("│ \u001b[1m" + dailyTanakh.DisplayValue.En + "\u001b[0m │");
     Console.WriteLine("└" + string.Concat(Enumerable.Repeat("─", titleLength)) + "┘");
-    Console.WriteLine(new string(summary).Replace("Lord", "Lᴏʀᴅ"));
+    Console.WriteLine((summaryOneLine ?? string.Empty).Replace("Lord", "Lᴏʀᴅ"));
 }
 catch (Exception e)
 {
