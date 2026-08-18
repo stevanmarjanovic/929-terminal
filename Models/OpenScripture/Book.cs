@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DailyLearning.Libraries;
 
 public class Book
 {
@@ -36,10 +37,8 @@ public class Book
     {
         try
         {
-            OpenScripture os = new OpenScripture();
-            string bookData = await os.Call($"book/{Id}");
-
-            Book book = JsonSerializer.Deserialize<Book>(bookData) ?? throw new Exception("Failed to deserialize Book");
+            var os = new OpenScripture();
+            var book = await os.GetBookById(Id);
 
             TitleShort = book.TitleShort;
             TitleOfficial = book.TitleOfficial;
@@ -58,6 +57,8 @@ public class Book
         }
 
     }
+    
+    public string FormattedTitle => Title.Replace("1", "I").Replace("2", "II").Replace("3", "III").Replace("4", "IV");
 
     public string FormatTitle()
     {

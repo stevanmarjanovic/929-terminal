@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DailyLearning.Libraries;
 
 public class Chapter
 {
@@ -33,19 +34,14 @@ public class Chapter
     {
         try
         {
-            OpenScripture os = new OpenScripture();
-            string chapterData = await os.Call($"chapter/{Id}");
-
-            Chapter chapter = JsonSerializer.Deserialize<Chapter>(chapterData) ?? throw new Exception("Failed to deserialize Chapter");
+            var os = new OpenScripture();
+            var chapter = await os.GetChapterById(Id);
 
             NextChapterId = chapter.NextChapterId;
             PreviousChapterId = chapter.PreviousChapterId;
             Summary = chapter.Summary;
-            // Volume = new Volume(chapter.Volume);
-            // Book = chapter.Book;
 
-            if (chapter.Data == null) throw new Exception("No chapter Data loaded");
-            Data = chapter.Data;
+            Data = chapter.Data ?? throw new Exception("No chapter Data loaded");
 
             return true;
         }

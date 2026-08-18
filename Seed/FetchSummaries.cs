@@ -1,87 +1,83 @@
-using Microsoft.Data.Sqlite;
 using System.Text.Json;
+using DailyLearning.Infrastructure;
+using DailyLearning.Libraries;
+using Microsoft.Data.Sqlite;
+
+namespace DailyLearning.Seed;
 
 public class FetchSummaries
 {
-    private readonly string volumeId = "oldtestament";
+    private const string VolumeId = "oldtestament";
+    private readonly Sefaria _sefaria = new Sefaria();
+    private readonly OpenScripture _openScripture = new OpenScripture();
+    private readonly PropertiesRepository _propertiesRepository = new PropertiesRepository();
+    private readonly SummaryRepository _summaryRepository = new SummaryRepository();
+
+    private void InitializeAsync()
+    {
+        
+    }
+
+    private void CacheSefariaStartingDate()
+    {
+        
+    }
 
     private async Task<bool> FetchChapterSummaries()
     {
-        // Create Data forlder if it doesnt exits
+        // Create Data folder if it doesn't exist
         var buildPath = AppContext.BaseDirectory;
         Directory.CreateDirectory(Path.Combine(buildPath, "Data"));
-
-        // Connect to local database
-        var databasePath = Path.Combine(AppContext.BaseDirectory, "Data", "summaries.sqlite");
-        var connectionString = $"Data Source={databasePath}";
+        
+        _summaryRepository.CreateTableIfNotExists();
+        _summaryRepository.TruncateTable();
 
         // Load all books from volume
-        OpenScripture os = new OpenScripture();
-        string responseBody = await os.Call($"volume/{volumeId}");
-        Volume volume = JsonSerializer.Deserialize<Volume>(responseBody) ?? throw new Exception("Failed to deserialize Volume");
-        var books = volume.Books;
-
-        if (books == null) throw new Exception($"No books in Volume {volume.Title}");
-
-        Console.WriteLine("Books acquired. Fetch chapters.");
-        foreach (Book book in books)
+        var books = await _openScripture.GetAllBooksByVolumeId(VolumeId);
+        TerminalOutput.WriteLine($"{books.Count} books acquired. Fetching individual chapters.");
+        
+        var chapterDatabaseOrderIndex = 1;
+        foreach (var book in books)
         {
             if (book.Chapters == null)
             {
-                Console.WriteLine($"Loading book {book.Id}");
                 await book.Load();
-                Console.WriteLine($"Book {book.Title} ({book.Id}) is successfully loaded.");
+                TerminalOutput.WriteBoldLine($"Book {book.Title}");
 
                 if (book.Chapters == null) throw new Exception("No Chapters");
 
-                foreach (Chapter chapter in book.Chapters)
+                for (var i = 0; i < book.Chapters.Count; i++)
                 {
-                    Console.WriteLine($"Loading chapter {chapter.Id}");
+                    var chapter = book.Chapters[i];
+                    
                     await chapter.Load();
 
-                    if (chapter.Data == null) throw new Exception("No chapter Data loaded");
-                    if (chapter.Data.Summary == null) throw new Exception("No chapter Data Summary loaded");
+                    if (chapter.Data?.Summary == null) throw new Exception("No chapter loaded");
 
-                    string chapterTitle = $"{book.FormatTitle()} {chapter.Data.Number}";
-                    string chapterSummary = chapter.Data.Summary;
-
-                    Console.WriteLine($"Chapter {chapterTitle} ({chapter.Id}) is successfully loaded.");
-
-                    using (var connection = new SqliteConnection(connectionString))
+                    var chapterTitle = $"{book.FormattedTitle} {chapter.Data.Number}";
+                    var chapterSummary = chapter.Data.Summary;
+                    
+                    if (i+1 == book.Chapters.Count)
                     {
-                        connection.Open();
+                        TerminalOutput.RewriteLine("");
+                        TerminalOutput.WriteSuccessLine($"{i+1}/{book.Chapters.Count}\tLoaded {book.FormattedTitle} chapters.");
+                    }
+                    else
+                    {
+                        TerminalOutput.RewriteLine($"{i+1}/{book.Chapters.Count}\tLoading {chapterTitle}");
+                    }
 
-                        var createTableCmd = connection.CreateCommand();
-                        createTableCmd.CommandText = @"
-                            CREATE TABLE IF NOT EXISTS summaries (
-                                chapter TEXT NOT NULL,
-                                summary TEXT
-                            );";
-                        createTableCmd.ExecuteNonQuery();
-
-                        var command = connection.CreateCommand();
-                        command.CommandText =
-                        @"
-                            INSERT INTO summaries (chapter, summary)
-                            VALUES ($chapter, $summary);
-                        ";
-                        command.Parameters.AddWithValue("$chapter", chapterTitle);
-                        command.Parameters.AddWithValue("$summary", chapterSummary);
-
-                        try
-                        {
-                            int rowsAffected = command.ExecuteNonQuery();
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e);
-                        }
+                    try
+                    {
+                        _summaryRepository.Insert(chapterDatabaseOrderIndex, chapterTitle, chapterSummary);
+                        chapterDatabaseOrderIndex++;
+                    } catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                        Console.WriteLine($"Failed to insert chapter {chapterTitle} into database.");
                     }
                 }
             }
-
-            Console.WriteLine("-------------------------------");
-            Console.WriteLine("");
         }
 
         return false;
@@ -93,67 +89,31 @@ public class FetchSummaries
         {
             return await FetchChapterSummaries();
         }
-        else
+
+        var jsonData = _summaryRepository.GetSummariesFromLocalJson();
+        var summaries = JsonSerializer.Deserialize<List<ChapterSummary>>(jsonData) ?? throw new Exception("Failed to deserialize ChapterSummary");
+
+        _summaryRepository.CreateTableIfNotExists();
+        _summaryRepository.TruncateTable();
+
+        var chapterDatabaseOrderIndex = 1;
+        foreach (var summary in summaries)
         {
-            // Create Data forlder if it doesnt exits
-            var buildPath = AppContext.BaseDirectory;
-            Directory.CreateDirectory(Path.Combine(buildPath, "Data"));
+            Console.WriteLine($"Importing {summary.Chapter}...");
 
-            // Connect to local database
-            var databasePath = Path.Combine(AppContext.BaseDirectory, "Data", "summaries.sqlite");
-            var connectionString = $"Data Source={databasePath}";
-
-            var jsonDataPath = Path.Combine(AppContext.BaseDirectory, "Data", "summaries.json");
-
-            string jsonData = File.ReadAllText(jsonDataPath);
-            var summaries = JsonSerializer.Deserialize<List<ChapterSummary>>(jsonData) ?? throw new Exception("Failed to deserialize ChapterSummary");
-
-            var connection = new SqliteConnection(connectionString);
-            connection.Open();
-            var createTableCmd = connection.CreateCommand();
-            createTableCmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS summaries (
-                    chapter TEXT NOT NULL,
-                    summary TEXT
-                );";
-            createTableCmd.ExecuteNonQuery();
-
-            var truncateTableCommand = connection.CreateCommand();
-            truncateTableCommand.CommandText = "DELETE FROM summaries; VACUUM;";
-            truncateTableCommand.ExecuteNonQuery();
-            connection.Close();
-
-            foreach (var summary in summaries)
+            try
             {
-                connection.Open();
-                Console.WriteLine($"Importing {summary.Chapter}...");
-
-                var command = connection.CreateCommand();
-                command.CommandText =
-                @"
-                    INSERT INTO summaries (chapter, summary)
-                    VALUES ($chapter, $summary);
-                ";
-                command.Parameters.AddWithValue("$chapter", summary.Chapter);
-                command.Parameters.AddWithValue("$summary", summary.Summary);
-
-                try
-                {
-                    int rowsAffected = command.ExecuteNonQuery();
-
-                    Console.WriteLine($"Successfully imported {summary.Chapter}.");
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                }
-                finally
-                {
-                    connection.Close();
-                }
+                _summaryRepository.Insert(chapterDatabaseOrderIndex, summary.Chapter, summary.Summary ?? string.Empty);
+                chapterDatabaseOrderIndex++;
+                Console.WriteLine($"Successfully imported {summary.Chapter}.");
             }
-
-            return false;
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                Console.WriteLine($"Failed to import {summary.Chapter}.");
+            }
         }
+
+        return false;
     }
 }
