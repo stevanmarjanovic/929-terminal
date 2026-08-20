@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 
+namespace NineTwoNineTerminal.Models.Sefaria;
+
 public class ExtraDetails
 {
     [JsonPropertyName("aliyot")]

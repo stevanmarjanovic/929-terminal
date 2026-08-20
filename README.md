@@ -1,54 +1,72 @@
-# Daily Tanakh Reading 929
+# 929 Learning Program CLI
 
 <img width="697" height="530" alt="Screenshot 2025-07-20 at 03 03 04" src="https://github.com/user-attachments/assets/f11e63c9-fcbf-492e-b8af-ebcc6e23d672" />
 
-I created this app for terminal integration to show daily Tanakh readings.
+The 929 Tanakh learning program invites everyone to read one chapter at a time, in order, as part of a shared journey through all 929 chapters. This CLI brings the current chapter and its available summary directly to your terminal.
+
+## Prerequisites
+
+The project targets .NET 9 and is published as a Native AOT executable. You need the .NET 9 SDK to build it. Native AOT builds are platform-specific, so publish it on (or for) the platform where you plan to run it.
 
 ## Usage
 
 ```shell
-# This just shows the daily Chapter and summary if it exists
-dailylearning
+# Show the daily chapter and its summary, if available
+929-cli
 
-# This updates the database of chapter summaries from Data/summaries.json file (snapshot of OpenScripture API as of July 2025)
-dailylearning update
+# Remove the link below the summary
+929-cli --no-link
 
-# This updates the database of chapter summaries directly from OpenScripture API
-dailylearning fetch
+# Display the title without box borders
+929-cli --simple
 ```
 
 ## Building
 
-`dotnet publish -c Release -r osx-arm64 --self-contained`
+Publish the app as a Native AOT executable for your platform:
 
-This command will generate build files in `./bin/Release/net9.0/osx-arm64/publish`. There are files next to `publish` folder that are generated but I don't know what they do and I didn't find them necesarry for integration.
+`dotnet publish -c Release -r osx-arm64`
 
-> Replace osx-arm64 with a different platform if you're not on macOS
+This generates the executable in `./bin/Release/net9.0/osx-arm64/publish`.
+On macOS, a `.dSYM` file may also be generated; it is used for debugging and is not required to run the CLI.
 
-## Folder structure
+Replace `osx-arm64` with the runtime identifier for your target platform, such as `linux-x64` or `win-x64`.
 
-I like to keep my local apps and symbolic links in user root directory using this structure
+## Deployment
 
+Copy the published executable to a directory on your `PATH`. For example, on macOS or Linux:
+
+```shell
+mkdir -p ~/.local/bin
+cp ./bin/Release/net9.0/osx-arm64/publish/929-cli ~/.local/bin/929-cli
 ```
-user ┐
-     ├── .homemadeapps/apps
-     └── .homemadeapps/bin
-```
 
-Copy the whole `publish` folder to `.homemadeapps/apps` and rename it to something relevand, for example DailyLearning. Then create a symbolic link with:
+If `~/.local/bin` is not already on your `PATH`, add it to your shell configuration before using the command.
+
+## Terminal startup
+
+To show the daily reading automatically whenever an interactive terminal session starts, add `929-cli` to your shell's startup file.
+
+For zsh, add this line to `~/.zshrc`:
 
 ```bash
-ln -s ~/.homemadeapps/apps/DailyLearning/DailyLearning ~/.homemadeapps/bin/dailylearning
-chmod +x ~/.homemadeapps/bin/dailylearning
+929-cli
 ```
 
-## Terminal integration
-
-In your `.zshrc` include
+If `~/.local/bin` is not already on your `PATH`, add this before the command:
 
 ```bash
-export PATH="$HOME/.homemadeapps/bin:$PATH"
-dailylearning
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-> Replace .zshrc with a differenct file if you're not using zsh
+Then reload your shell configuration or open a new terminal:
+
+```shell
+source ~/.zshrc
+```
+
+If you use a different shell, add `929-cli` to its interactive startup file, such as `~/.bashrc` for Bash.
+
+## Credits
+
+Summaries in `summaries.json` were fetched from the OpenScripture API (snapshot from July 2025).

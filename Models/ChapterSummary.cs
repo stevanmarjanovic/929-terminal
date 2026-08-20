@@ -1,10 +1,12 @@
 using System.Text.Json.Serialization;
 
-class ChapterSummary
+namespace NineTwoNineTerminal.Models;
+
+public class ChapterSummary
 {
     [JsonPropertyName("chapter")]
     public required string Chapter { get; set; }
 
     [JsonPropertyName("summary")]
-    public string? Summary { get; set; }
+    public required string Summary { get; set; }
 }

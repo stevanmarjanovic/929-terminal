@@ -1,13 +1,13 @@
-﻿namespace DailyLearning.Libraries;
+﻿namespace NineTwoNineTerminal.Presentation;
 
-public class TerminalOutput
+public static class TerminalOutput
 {
     public static void WriteTitle(string title)
     {
         var titleLength = title.Length + 2;
         
         Console.WriteLine("┌" + string.Concat(Enumerable.Repeat("─", titleLength)) + "┐");
-        Console.WriteLine("│ \u001b[1m" + title + "\u001b[0m │");
+        Console.WriteLine("│ \e[1m" + title + "\e[0m │");
         Console.WriteLine("└" + string.Concat(Enumerable.Repeat("─", titleLength)) + "┘");
     }
 
