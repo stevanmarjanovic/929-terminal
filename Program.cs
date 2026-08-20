@@ -1,21 +1,14 @@
-using DailyLearning;
+using NineTwoNineTerminal;
+using NineTwoNineTerminal.Application;
 
 var controller = new Controller();
 
-bool showLink = true;
-bool simplifiedView = false;
+var showLink = true;
+var simplifiedView = false;
 foreach (var arg in args)
 {
     switch (arg)
     {
-        case "update":
-            await controller.UpdateFromLocalJsonAsync();
-            return 0;
-
-        case "initialize":
-            await controller.Initialize();
-            return 0;
-        
         case "--simple":
             simplifiedView = true;
             break;

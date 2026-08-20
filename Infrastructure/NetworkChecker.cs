@@ -1,13 +1,13 @@
 using System.Net.NetworkInformation;
 
-namespace DailyLearning.Libraries;
+namespace NineTwoNineTerminal.Infrastructure;
 
-public class NetworkChecker
+public static class NetworkChecker
 {
     public static bool IsConnected(int pingTimeout = 50, int dnsTimeout = 300) =>
         IsConnectedAsync(pingTimeout, dnsTimeout).GetAwaiter().GetResult();
 
-    public static async Task<bool> IsConnectedAsync(int pingTimeout = 50, int dnsTimeout = 300)
+    private static async Task<bool> IsConnectedAsync(int pingTimeout = 50, int dnsTimeout = 300)
     {
         if (!NetworkInterface.GetIsNetworkAvailable())
         {
