@@ -1,6 +1,6 @@
 # 929 Learning Program CLI
 
-<img width="697" height="530" alt="Screenshot 2025-07-20 at 03 03 04" src="https://github.com/user-attachments/assets/f11e63c9-fcbf-492e-b8af-ebcc6e23d672" />
+<img width="751" height="544" alt="Screenshot 2026-08-20 at 16 13 09" src="https://github.com/user-attachments/assets/98e7638a-361c-4f14-a1fe-dffe6b47d74d" />
 
 The 929 Tanakh learning program invites everyone to read one chapter at a time, in order, as part of a shared journey through all 929 chapters. This CLI brings the current chapter and its available summary directly to your terminal.
 
